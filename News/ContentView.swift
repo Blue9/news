@@ -96,6 +96,22 @@ class WebViewModel: NSObject, ObservableObject, WKNavigationDelegate {
         webView.goBack()
     }
 
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        var request = navigationAction.request // creates new request object
+        if navigationAction.navigationType == .linkActivated && request.value(forHTTPHeaderField: "Referer") != "https://www.google.com" {
+            request.setValue("https://www.google.com", forHTTPHeaderField: "Referer")
+            request.setValue("FTCookieConsentGDPR=true; ft-access-decision-policy=FLEX_PRIVILEGED_REFERER_POLICY; ft-privileged-referer-model=1; ft-privileged-referer-phase=S;", forHTTPHeaderField: "Cookie")
+            decisionHandler(.cancel)
+            webView.load(request)
+        } else {
+            decisionHandler(.allow)
+        }
+    }
+
     private func setupBindings() {
         webView.publisher(for: \.canGoBack).assign(to: &$canGoBack)
         webView.publisher(for: \.canGoForward).assign(to: &$canGoForward)
